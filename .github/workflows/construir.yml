@@ -1,0 +1,43 @@
+# Construye los ejecutables de Windows, macOS y Linux en los servidores de GitHub.
+# Se ejecuta a mano (pestaña Actions -> "Construir ejecutables" -> Run workflow) o al
+# publicar una etiqueta vX.Y.Z. Los ZIP quedan como "Artifacts" del run.
+name: Construir ejecutables
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  construir:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+          - os: macos-latest      # Mac con procesador Apple (M1, M2...)
+          - os: macos-13          # Mac con procesador Intel
+          - os: ubuntu-22.04      # se construye en una versión antigua para que funcione en distribuciones nuevas
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Librerías de sistema para Qt (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
+      - name: Instalar
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[dev]" pyinstaller
+      - name: Pruebas
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest -q
+      - name: Construir
+        run: python empaquetar/construir.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EditorATS-${{ matrix.os }}
+          path: dist/*.zip

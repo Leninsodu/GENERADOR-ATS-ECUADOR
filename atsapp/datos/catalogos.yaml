@@ -1,0 +1,627 @@
+# Catálogos del ATS transcritos de la "Ficha Técnica - Anexo Transaccional
+# Simplificado (ATS)" publicada por el SRI (versión de febrero de 2025).
+# Formato de cada fila: [código, descripción, vigente desde, vigente hasta]
+# (fechas en formato AAAA-MM-DD; null = sin límite).
+# Puede editar este archivo o crear uno propio en la carpeta de datos del
+# usuario (catalogos.yaml) para agregar o corregir valores.
+
+tablas:
+  t1_mes:
+    titulo: "Tabla 1 - Período (mes)"
+    filas:
+      - ["01", "Enero"]
+      - ["02", "Febrero"]
+      - ["03", "Marzo"]
+      - ["04", "Abril"]
+      - ["05", "Mayo"]
+      - ["06", "Junio / I semestre (RIMPE)"]
+      - ["07", "Julio"]
+      - ["08", "Agosto"]
+      - ["09", "Septiembre"]
+      - ["10", "Octubre"]
+      - ["11", "Noviembre"]
+      - ["12", "Diciembre / II semestre (RIMPE)"]
+
+  t2_compras:
+    titulo: "Tabla 2 - Tipo de identificación (compras)"
+    filas:
+      - ["01", "RUC", 2000-01-01, null]
+      - ["02", "Cédula", 2000-01-01, null]
+      - ["03", "Pasaporte / identificación tributaria del exterior", 2000-01-01, null]
+
+  t2_ventas:
+    titulo: "Tabla 2 - Tipo de identificación (ventas)"
+    filas:
+      - ["04", "RUC", 2000-01-01, null]
+      - ["05", "Cédula", 2000-01-01, null]
+      - ["06", "Pasaporte / identificación tributaria del exterior", 2000-01-01, null]
+      - ["07", "Consumidor final", 2000-01-01, null]
+      - ["19", "Placa o RAMV/CPN", 2014-10-01, null]
+
+  t2_exportacion:
+    titulo: "Tabla 2 - Tipo de identificación (exportaciones)"
+    filas:
+      - ["09", "Exportación", 2000-01-01, 2015-02-28]
+      - ["20", "RUC", 2015-03-01, null]
+      - ["21", "Pasaporte / identificación tributaria del exterior", 2015-03-02, null]
+
+  t2_tarjetas:
+    titulo: "Tabla 2 - Tipo de identificación (tarjetas de crédito)"
+    filas:
+      - ["10", "RUC", 2000-01-01, null]
+      - ["11", "Pasaporte / identificación tributaria del exterior", 2000-01-01, null]
+
+  t2_rendimientos:
+    titulo: "Tabla 2 - Tipo de identificación (rendimientos financieros)"
+    filas:
+      - ["12", "RUC", 2000-01-01, null]
+      - ["13", "Cédula", 2000-01-01, null]
+      - ["14", "Pasaporte / identificación tributaria del exterior", 2000-01-01, null]
+
+  t2_fideicomisos:
+    titulo: "Tabla 2 - Tipo de identificación (fondos y fideicomisos)"
+    filas:
+      - ["15", "RUC", 2000-01-01, null]
+      - ["16", "Cédula", 2000-01-01, null]
+      - ["17", "Pasaporte / identificación tributaria del exterior", 2000-01-01, null]
+
+  t4_comprobantes:
+    titulo: "Tabla 4 - Tipos de comprobantes autorizados"
+    # columnas extra: transacciones (códigos de la tabla 2) y sustentos (tabla 5)
+    filas:
+      - ["01", "Factura", null, null, ["01","09","20","21"], ["01","02","03","04","05","06","07","08","09","14","15","00"]]
+      - ["02", "Nota o boleta de venta", null, null, ["01"], ["02","04","05","07","08","14","15","00"]]
+      - ["03", "Liquidación de compra de bienes o prestación de servicios", null, null, ["02","03"], ["01","02","03","04","05","06","07","08","14","15"]]
+      - ["04", "Nota de crédito", null, null, ["01","02","03","04","05","06","07","09","19","20","21"], ["01","02","03","04","05","06","07","08","09","14","15","00"]]
+      - ["05", "Nota de débito", null, null, ["01","02","03","04","05","06","07","09","19","20","21"], ["01","02","03","04","05","06","07","08","09","14","15","00"]]
+      - ["06", "Guías de remisión", null, null, [], []]
+      - ["07", "Comprobante de retención", null, null, [], []]
+      - ["08", "Boletos o entradas a espectáculos públicos", null, null, ["01"], []]
+      - ["09", "Tiquetes o vales emitidos por máquinas registradoras", null, null, ["01","02","03"], ["02"]]
+      - ["11", "Pasajes expedidos por empresas de aviación", null, null, ["01"], ["01","02","05"]]
+      - ["12", "Documentos emitidos por instituciones financieras", null, null, ["01","02","03"], ["01","02","11","15"]]
+      - ["15", "Comprobante de venta emitido en el exterior", null, null, ["03","20","21"], ["02","04","05","07","15"]]
+      - ["16", "FUE / DAU / DAV", null, null, ["09","20","21"], []]
+      - ["18", "Documentos autorizados utilizados en ventas excepto N/C N/D", null, null, ["04","05","06","07","19"], []]
+      - ["19", "Comprobantes de pago de cuotas o aportes", null, null, ["01","02","03"], ["02","10","13","00"]]
+      - ["20", "Documentos por servicios administrativos emitidos por inst. del Estado", null, null, ["01"], ["02"]]
+      - ["21", "Carta de porte aéreo", null, null, ["01"], ["01","02","08"]]
+      - ["22", "RECAP", null, null, ["10","11"], []]
+      - ["23", "Nota de crédito TC", null, null, ["10","11"], []]
+      - ["24", "Nota de débito TC", null, null, ["10","11"], []]
+      - ["41", "Comprobante de venta emitido por reembolso", null, null, ["01","02","03","04","05","06","07","09","19","20","21"], ["01","02","03","04","05","06","07"]]
+      - ["42", "Documento retención presuntiva y retención emitida por propio vendedor o intermediario", null, null, ["01","02","03"], ["00","12"]]
+      - ["43", "Liquidación para explotación y exploración de hidrocarburos", null, null, ["01"], ["01","02","06","07"]]
+      - ["44", "Comprobante de contribuciones y aportes", null, null, ["04","05","06","19"], []]
+      - ["45", "Liquidación por reclamos de aseguradoras", null, null, ["01","03"], ["09"]]
+      - ["47", "Nota de crédito por reembolso emitida por intermediario", null, null, ["01","04","05","06","09","19","20","21"], ["01","02","03","04","06","07"]]
+      - ["48", "Nota de débito por reembolso emitida por intermediario", null, null, ["01","04","05","06","09","19","20","21"], ["01","02","03","04","06","07"]]
+      - ["49", "Proveedor directo de exportador bajo régimen especial", null, null, ["04"], []]
+      - ["50", "A inst. Estado y empr. públicas que percibe ingreso exento de IR", null, null, ["04"], []]
+      - ["51", "N/C a inst. Estado y empr. públicas que percibe ingreso exento de IR", null, null, ["04"], []]
+      - ["52", "N/D a inst. Estado y empr. públicas que percibe ingreso exento de IR", null, null, ["04"], []]
+      - ["294", "Liquidación de compra de bienes muebles usados", null, null, ["02","03"], ["01","02","03","04","05","06","07","08"]]
+      - ["344", "Liquidación de compra de vehículos usados", null, null, ["02","03"], ["01","02","03","04","05","06","07","08"]]
+      - ["364", "Acta entrega-recepción PET", null, null, ["01","02","03"], ["02","07"]]
+      - ["370", "Factura operadora transporte / socio", null, null, ["04","05","06"], []]
+      - ["371", "Comprobante socio a operadora de transporte", null, null, ["04","05","06"], []]
+      - ["372", "Nota de crédito operadora transporte / socio", null, null, ["04","05","06"], []]
+      - ["373", "Nota de débito operadora transporte / socio", null, null, ["04","05","06"], []]
+      - ["374", "Nota de débito operadora transporte / socio", null, null, ["04","05","06"], []]
+      - ["375", "Liquidación de compra RISE de bienes o prestación de servicios", null, null, ["01"], ["01","02","03","04","05","06","07","08"]]
+
+  t5_sustento:
+    titulo: "Tabla 5 - Sustento del comprobante"
+    filas:
+      - ["01", "Crédito tributario para declaración de IVA (servicios y bienes distintos de inventarios y activos fijos)", 2000-01-01, null]
+      - ["02", "Costo o gasto para declaración de IR (servicios y bienes distintos de inventarios y activos fijos)", 2000-01-01, null]
+      - ["03", "Activo fijo - crédito tributario para declaración de IVA", 2000-01-01, null]
+      - ["04", "Activo fijo - costo o gasto para declaración de IR", 2000-01-01, null]
+      - ["05", "Liquidación gastos de viaje, hospedaje y alimentación (a nombre de empleados)", 2000-01-01, null]
+      - ["06", "Inventario - crédito tributario para declaración de IVA", 2000-01-01, null]
+      - ["07", "Inventario - costo o gasto para declaración de IR", 2000-01-01, null]
+      - ["08", "Valor pagado para solicitar reembolso de gasto (intermediario)", 2000-01-01, null]
+      - ["09", "Reembolso por siniestros", 2000-01-01, null]
+      - ["10", "Distribución de dividendos, beneficios o utilidades", 2000-01-01, null]
+      - ["11", "Convenios de débito o recaudación para IFI's", 2015-03-01, null]
+      - ["12", "Impuestos y retenciones presuntivos", 2015-03-01, null]
+      - ["13", "Valores reconocidos por entidades del sector público a favor de sujetos pasivos", 2015-03-01, null]
+      - ["14", "Valores facturados por socios a operadoras de transporte (no constituyen gasto de la operadora)", 2018-01-01, null]
+      - ["15", "Pagos por consumos propios y de terceros de servicios digitales", 2020-06-01, null]
+      - ["00", "Casos especiales cuyo sustento no aplica en las opciones anteriores", 2000-01-01, 2015-02-28]
+
+  t6_distritos:
+    titulo: "Tabla 6 - Distrito aduanero"
+    filas:
+      - ["019", "Guayaquil - aéreo"]
+      - ["028", "Guayaquil - marítimo"]
+      - ["037", "Manta"]
+      - ["046", "Esmeraldas"]
+      - ["055", "Quito"]
+      - ["064", "Puerto Bolívar"]
+      - ["073", "Tulcán"]
+      - ["082", "Huaquillas"]
+      - ["091", "Cuenca"]
+      - ["109", "Loja - Macará"]
+      - ["118", "Santa Elena"]
+      - ["127", "Latacunga"]
+      - ["136", "Gerencia General"]
+      - ["145", "CEBAF - San Miguel"]
+
+  t7_regimen:
+    titulo: "Tabla 7.1 - Régimen aduanero (desde octubre 2012)"
+    filas:
+      - ["40", "Exportación definitiva"]
+      - ["50", "Exportación temporal para reimportación en el mismo estado"]
+      - ["51", "Exportación temporal para perfeccionamiento pasivo"]
+      - ["60", "Reexportación de mercancías en el mismo estado"]
+      - ["61", "Reexportación de mercancías importadas para perfeccionamiento activo"]
+      - ["79", "Exportación a consumo desde Zona Franca"]
+      - ["83", "Reembarque"]
+      - ["94", "Courier exportación"]
+      - ["95", "Exportaciones Correos del Ecuador"]
+
+  t8_tarjetas:
+    titulo: "Tabla 8 - Tarjetas de crédito"
+    filas:
+      - ["01", "American Express"]
+      - ["02", "Diners Club"]
+      - ["04", "MasterCard"]
+      - ["05", "Visa"]
+      - ["07", "Otra tarjeta"]
+
+  t9_fideicomisos:
+    titulo: "Tabla 9 - Tipos de fideicomiso"
+    filas:
+      - ["1", "Fondos de inversión (5%)", 2000-01-01, 2007-06-30]
+      - ["2", "Fideicomiso mercantil de administración (5%)", 2000-01-01, 2007-06-30]
+      - ["3", "Fideicomiso mercantil de inversión (5%)", 2000-01-01, 2007-06-30]
+      - ["4", "Fideicomiso mercantil inmobiliario (5%)", 2000-01-01, 2007-06-30]
+      - ["5", "Fideicomiso mercantil de garantías (5%)", 2000-01-01, 2007-06-30]
+      - ["12", "Fideicomiso mercantil de titularización (5%)", 2000-01-01, 2007-06-30]
+      - ["6", "Fideicomiso mercantil inmobiliario (0%)", 2000-01-01, null]
+      - ["7", "Fondos de inversión (0%)", 2007-07-01, null]
+      - ["8", "Fideicomiso mercantil de administración (0%)", 2007-07-01, null]
+      - ["9", "Fideicomiso mercantil de inversión (0%)", 2007-07-01, null]
+      - ["10", "Fideicomiso mercantil inmobiliario (0%)", 2007-07-01, null]
+      - ["11", "Fideicomiso mercantil de garantías (0%)", 2007-07-01, null]
+      - ["13", "Fideicomiso mercantil de titularización (0%)", 2007-07-01, null]
+      - ["14", "Fideicomiso mercantil de titularización (0%)", 2000-01-01, null]
+      - ["15", "Fideicomiso mercantil de inversión (0%)", 2000-01-01, null]
+      - ["16", "Fideicomiso mercantil de administración (0%)", 2000-01-01, null]
+      - ["17", "Fondos de inversión (0%)", 2000-01-01, null]
+      - ["18", "Fideicomiso mercantil de garantías (0%)", 2000-01-01, null]
+      - ["19", "Fondo complementario (0%)", 2013-01-01, null]
+
+  t10_exportacion:
+    titulo: "Tabla 10 - Tipo de exportación / ingreso del exterior"
+    filas:
+      - ["01", "Exportación de bienes con refrendo", 2000-01-01, null]
+      - ["02", "Exportación de bienes sin refrendo", 2000-01-01, null]
+      - ["03", "Exportaciones de servicios u otros ingresos del exterior", 2015-03-01, null]
+
+  t13_formas_pago:
+    titulo: "Tabla 13 - Formas de pago / cobro"
+    filas:
+      - ["01", "Sin utilización del sistema financiero", 2013-01-01, null]
+      - ["02", "Cheque propio", 2013-01-01, 2016-08-31]
+      - ["03", "Cheque certificado", 2013-01-01, 2016-08-31]
+      - ["04", "Cheque de gerencia", 2013-01-01, 2016-08-31]
+      - ["05", "Cheque del exterior", 2013-01-01, 2016-08-31]
+      - ["06", "Débito de cuenta", 2013-01-01, 2016-08-31]
+      - ["07", "Transferencia propio banco", 2013-01-01, 2016-08-31]
+      - ["08", "Transferencia otro banco nacional", 2013-01-01, 2016-08-31]
+      - ["09", "Transferencia banco exterior", 2013-01-01, 2016-08-31]
+      - ["10", "Tarjeta de crédito nacional", 2013-01-01, 2016-08-31]
+      - ["11", "Tarjeta de crédito internacional", 2013-01-01, 2016-08-31]
+      - ["12", "Giro", 2013-01-01, 2016-08-31]
+      - ["13", "Depósito en cuenta (corriente/ahorros)", 2013-01-01, 2016-08-31]
+      - ["14", "Endoso de inversión", 2013-01-01, 2016-08-31]
+      - ["15", "Compensación de deudas", 2013-01-01, null]
+      - ["16", "Tarjeta de débito", 2016-05-01, null]
+      - ["17", "Dinero electrónico", 2016-05-01, null]
+      - ["18", "Tarjeta prepago", 2016-05-01, null]
+      - ["19", "Tarjeta de crédito", 2016-06-01, null]
+      - ["20", "Otros con utilización del sistema financiero", 2016-06-01, null]
+      - ["21", "Endoso de títulos", 2016-06-01, null]
+
+  t14_tipo_proveedor:
+    titulo: "Tabla 14 - Tipo de identificación del proveedor"
+    filas:
+      - ["01", "Persona natural"]
+      - ["02", "Sociedad"]
+
+  t15_tipo_pago:
+    titulo: "Tabla 15 - Tipo de pago"
+    filas:
+      - ["01", "Pago a residente / establecimiento permanente"]
+      - ["02", "Pago a no residente"]
+
+  t18_ingresos_exterior:
+    titulo: "Tabla 18 - Tipos de ingresos del exterior"
+    filas:
+      - ["401", "Rentas inmobiliarias", 2016-05-01, null]
+      - ["402", "Beneficios y servicios empresariales / asistencia técnica", 2016-05-01, null]
+      - ["403", "Beneficios y servicios empresariales / comisiones", 2016-05-01, null]
+      - ["404", "Beneficios y servicios empresariales / comisiones sobre préstamos", 2016-05-01, null]
+      - ["405", "Beneficios y servicios empresariales / honorarios", 2016-05-01, null]
+      - ["406", "Beneficios y servicios empresariales / publicidad", 2016-05-01, null]
+      - ["407", "Beneficios y servicios empresariales / servicios administrativos", 2016-05-01, null]
+      - ["408", "Beneficios y servicios empresariales / servicios financieros", 2016-05-01, null]
+      - ["409", "Beneficios y servicios empresariales / servicios intermedios de la producción (maquila)", 2016-05-01, null]
+      - ["410", "Beneficios y servicios empresariales / servicios técnicos", 2016-05-01, null]
+      - ["411", "Navegación marítima y/o aérea", 2016-05-01, null]
+      - ["412", "Dividendos", 2016-05-01, null]
+      - ["413", "Rendimientos financieros / comisiones sobre préstamos", 2016-05-01, null]
+      - ["414", "Rendimientos financieros / otras inversiones", 2016-05-01, null]
+      - ["415", "Garantías", 2016-05-01, null]
+      - ["416", "Servicios profesionales independientes / dependientes", 2016-05-01, null]
+      - ["417", "Intereses sobre préstamos", 2016-05-01, null]
+      - ["418", "Intereses créditos en ventas", 2016-05-01, null]
+      - ["419", "Regalías / cánones, derechos de autor, marcas, patentes y similares", 2016-05-01, null]
+      - ["420", "Regalías / por concepto de franquicias", 2016-05-01, null]
+      - ["421", "Seguros y reaseguros (primas y cesiones)", 2016-05-01, null]
+      - ["422", "Utilidad o pérdida por derivados financieros", 2016-05-01, null]
+      - ["423", "Utilidad por operaciones de futuros distintas de las del sector financiero", 2016-05-01, null]
+      - ["424", "Venta de bienes intangibles", 2016-05-01, null]
+      - ["425", "Enajenación de derechos representativos de capital", 2016-05-01, null]
+      - ["426", "Enajenación de obligaciones", 2016-05-01, null]
+      - ["427", "Artistas", 2016-05-01, null]
+      - ["428", "Deportistas", 2016-05-01, null]
+      - ["429", "Participación de consejeros", 2016-05-01, null]
+      - ["430", "Entretenimiento público", 2016-05-01, null]
+      - ["431", "Pensiones", 2016-05-01, null]
+      - ["432", "Reembolso de gastos", 2016-05-01, null]
+      - ["433", "Funciones públicas", 2016-05-01, null]
+      - ["434", "Estudiantes", 2016-05-01, null]
+      - ["435", "Arrendamiento mercantil internacional", 2016-05-01, null]
+      - ["436", "Contratos de fletamento de naves para transporte aéreo o marítimo internacional", 2016-05-01, null]
+      - ["437", "Seguros y reaseguros (primas y cesiones)", 2016-05-01, null]
+      - ["438", "Otros ingresos", 2016-05-01, null]
+
+  t19_regimen_exterior:
+    titulo: "Tabla 19 - Tipos de régimen fiscal del exterior"
+    filas:
+      - ["01", "Régimen general"]
+      - ["02", "Paraíso fiscal"]
+      - ["03", "Régimen fiscal preferente o jurisdicción de menor imposición"]
+
+  t20_emision:
+    titulo: "Tabla 20 - Tipo de emisión"
+    filas:
+      - ["F", "Facturación física", 2000-01-01, null]
+      - ["E", "Facturación electrónica", 2016-01-01, null]
+
+  t21_compensaciones:
+    titulo: "Tabla 21 - Tipo de compensaciones"
+    filas:
+      - ["01", "Ley Solidaridad - zonas afectadas", 2016-06-01, 2017-05-31]
+      - ["02", "Medios electrónicos", 2016-05-01, null]
+
+  si_no:
+    titulo: "Sí / No"
+    filas:
+      - ["SI", "Sí"]
+      - ["NO", "No"]
+
+  si_no_na:
+    titulo: "Sí / No / No aplica"
+    filas:
+      - ["SI", "Sí"]
+      - ["NO", "No"]
+      - ["NA", "No aplica"]
+
+  t16_paises:
+    titulo: "Tabla 16 - Países"
+    filas:
+      - ["NA", "No aplica (pago local)"]
+      - ["16", "AMERICAN SAMOA"]
+      - ["74", "BOUVET ISLAND"]
+      - ["101", "ARGENTINA"]
+      - ["102", "BOLIVIA"]
+      - ["103", "BRASIL"]
+      - ["104", "CANADA"]
+      - ["105", "COLOMBIA"]
+      - ["106", "COSTA RICA"]
+      - ["107", "CUBA"]
+      - ["108", "CHILE"]
+      - ["109", "ANGUILA"]
+      - ["110", "ESTADOS UNIDOS"]
+      - ["111", "GUATEMALA"]
+      - ["112", "HAITI"]
+      - ["113", "HONDURAS"]
+      - ["114", "JAMAICA"]
+      - ["115", "MALVINAS ISLAS"]
+      - ["116", "MEXICO"]
+      - ["117", "NICARAGUA"]
+      - ["118", "PANAMA"]
+      - ["119", "PARAGUAY"]
+      - ["120", "PERU"]
+      - ["121", "PUERTO RICO"]
+      - ["122", "REPUBLICA DOMINICANA"]
+      - ["123", "EL SALVADOR"]
+      - ["124", "TRINIDAD Y TOBAGO"]
+      - ["125", "URUGUAY"]
+      - ["126", "VENEZUELA"]
+      - ["127", "CURAZAO"]
+      - ["129", "BAHAMAS"]
+      - ["130", "BARBADOS"]
+      - ["131", "GRANADA"]
+      - ["132", "GUYANA"]
+      - ["133", "SURINAM"]
+      - ["134", "ANTIGUA Y BARBUDA"]
+      - ["135", "BELICE"]
+      - ["136", "DOMINICA"]
+      - ["137", "SAN CRISTOBAL Y NEVIS"]
+      - ["138", "SANTA LUCIA"]
+      - ["139", "SAN VICENTE Y LAS GRANAD."]
+      - ["141", "ARUBA"]
+      - ["142", "BERMUDA"]
+      - ["143", "GUADALUPE"]
+      - ["144", "GUYANA FRANCESA"]
+      - ["145", "ISLAS CAIMAN"]
+      - ["146", "ISLAS VIRGENES (BRITANICAS)"]
+      - ["147", "JOHNSTON ISLA"]
+      - ["148", "MARTINICA"]
+      - ["149", "MONTSERRAT ISLA"]
+      - ["151", "TURCAS Y CAICOS ISLAS"]
+      - ["152", "VIRGENES, ISLAS"]
+      - ["201", "(NORT.AMER.) ALBANIA"]
+      - ["202", "ALEMANIA"]
+      - ["203", "AUSTRIA"]
+      - ["204", "BELGICA"]
+      - ["205", "BULGARIA"]
+      - ["207", "ALBORAN Y PEREJIL"]
+      - ["208", "DINAMARCA"]
+      - ["209", "ESPAÑA"]
+      - ["211", "FRANCIA"]
+      - ["212", "FINLANDIA"]
+      - ["213", "REINO UNIDO"]
+      - ["214", "GRECIA"]
+      - ["215", "PAISES BAJOS (HOLANDA)"]
+      - ["216", "HUNGRIA"]
+      - ["217", "IRLANDA"]
+      - ["218", "ISLANDIA"]
+      - ["219", "ITALIA"]
+      - ["220", "LUXEMBURGO"]
+      - ["221", "MALTA"]
+      - ["222", "NORUEGA"]
+      - ["223", "POLONIA"]
+      - ["224", "PORTUGAL"]
+      - ["225", "RUMANIA"]
+      - ["226", "SUECIA"]
+      - ["227", "SUIZA"]
+      - ["228", "CANARIAS ISLAS"]
+      - ["229", "UCRANIA"]
+      - ["230", "RUSIA"]
+      - ["231", "YUGOSLAVIA"]
+      - ["233", "ANDORRA"]
+      - ["234", "LIECHTENSTEIN"]
+      - ["235", "MONACO"]
+      - ["237", "SAN MARINO"]
+      - ["238", "VATICANO (SANTA SEDE)"]
+      - ["239", "GIBRALTAR"]
+      - ["241", "BELARUS"]
+      - ["242", "BOSNIA Y HERZEGOVINA"]
+      - ["243", "CROACIA"]
+      - ["244", "ESLOVENIA"]
+      - ["245", "ESTONIA"]
+      - ["246", "GEORGIA"]
+      - ["247", "GROENLANDIA"]
+      - ["248", "LETONIA"]
+      - ["249", "LITUANIA"]
+      - ["250", "MOLDOVA"]
+      - ["251", "MACEDONIA"]
+      - ["252", "ESLOVAQUIA"]
+      - ["253", "ISLAS FAROE"]
+      - ["260", "FRENCH SOUTHERN TERRITORIES"]
+      - ["301", "AFGANISTAN"]
+      - ["302", "ARABIA SAUDITA"]
+      - ["303", "MYANMAR (BURMA)"]
+      - ["304", "CAMBOYA"]
+      - ["306", "COREA NORTE"]
+      - ["307", "TAIWAN (CHINA)"]
+      - ["308", "FILIPINAS"]
+      - ["309", "INDIA"]
+      - ["310", "INDONESIA"]
+      - ["311", "IRAK"]
+      - ["312", "IRAN (REPUBLICA ISLAMICA)"]
+      - ["313", "ISRAEL"]
+      - ["314", "JAPON"]
+      - ["315", "JORDANIA"]
+      - ["316", "KUWAIT"]
+      - ["317", "LAOS, REP. POP. DEMOC."]
+      - ["318", "LIBANO"]
+      - ["319", "MALASIA"]
+      - ["321", "MONGOLIA (MANCHURIA)"]
+      - ["322", "PAKISTAN"]
+      - ["323", "SIRIA"]
+      - ["325", "TAILANDIA"]
+      - ["327", "BAHREIN"]
+      - ["328", "BANGLADESH"]
+      - ["329", "BUTAN"]
+      - ["330", "COREA DEL SUR"]
+      - ["331", "CHINA POPULAR"]
+      - ["332", "CHIPRE"]
+      - ["333", "EMIRATOS ARABES UNIDOS"]
+      - ["334", "QATAR"]
+      - ["335", "MALDIVAS"]
+      - ["336", "NEPAL"]
+      - ["337", "OMAN"]
+      - ["338", "SINGAPUR"]
+      - ["339", "SRI LANKA (CEILAN)"]
+      - ["341", "VIETNAM"]
+      - ["342", "YEMEN"]
+      - ["343", "ISLAS HEARD Y MCDONALD"]
+      - ["344", "BRUNEI DARUSSALAM"]
+      - ["346", "TURQUIA"]
+      - ["347", "AZERBAIJAN"]
+      - ["348", "KAZAJSTAN"]
+      - ["349", "KIRGUIZISTAN"]
+      - ["350", "TAJIKISTAN"]
+      - ["351", "TURKMENISTAN"]
+      - ["352", "UZBEKISTAN"]
+      - ["353", "PALESTINA"]
+      - ["354", "HONG KONG"]
+      - ["355", "MACAO"]
+      - ["356", "ARMENIA"]
+      - ["382", "MONTENEGRO"]
+      - ["402", "BURKINA FASO"]
+      - ["403", "ARGELIA"]
+      - ["404", "BURUNDI"]
+      - ["405", "CAMERUN"]
+      - ["406", "CONGO"]
+      - ["407", "ETIOPIA"]
+      - ["408", "GAMBIA"]
+      - ["409", "GUINEA"]
+      - ["410", "LIBERIA"]
+      - ["412", "MADAGASCAR"]
+      - ["413", "MALAWI"]
+      - ["414", "MALI"]
+      - ["415", "MARRUECOS"]
+      - ["416", "MAURITANIA"]
+      - ["417", "NIGERIA"]
+      - ["419", "ZIMBABWE (RHODESIA)"]
+      - ["420", "SENEGAL"]
+      - ["421", "SUDAN"]
+      - ["422", "SUDAFRICA (CISKEI)"]
+      - ["423", "SIERRA LEONA"]
+      - ["425", "TANZANIA"]
+      - ["426", "UGANDA"]
+      - ["427", "ZAMBIA"]
+      - ["428", "ÅLAND ISLANDS"]
+      - ["429", "BENIN"]
+      - ["430", "BOTSWANA"]
+      - ["431", "REPUBLICA CENTROAFRICANA"]
+      - ["432", "COSTA DE MARFIL"]
+      - ["433", "CHAD"]
+      - ["434", "EGIPTO"]
+      - ["435", "GABON"]
+      - ["436", "GHANA"]
+      - ["437", "GUINEA-BISSAU"]
+      - ["438", "GUINEA ECUATORIAL"]
+      - ["439", "KENIA"]
+      - ["440", "LESOTHO"]
+      - ["441", "MAURICIO"]
+      - ["442", "MOZAMBIQUE"]
+      - ["443", "MAYOTTE"]
+      - ["444", "NIGER"]
+      - ["445", "RWANDA"]
+      - ["446", "SEYCHELLES"]
+      - ["447", "SAHARA OCCIDENTAL"]
+      - ["448", "SOMALIA"]
+      - ["449", "SANTO TOME Y PRINCIPE"]
+      - ["450", "SWAZILANDIA"]
+      - ["451", "TOGO"]
+      - ["452", "TUNEZ"]
+      - ["453", "ZAIRE"]
+      - ["454", "ANGOLA"]
+      - ["456", "CABO VERDE"]
+      - ["458", "COMORAS"]
+      - ["459", "DJIBOUTI"]
+      - ["460", "NAMIBIA"]
+      - ["463", "ERITREA"]
+      - ["464", "MOROCCO"]
+      - ["465", "REUNION"]
+      - ["466", "SANTA ELENA"]
+      - ["499", "JERSEY"]
+      - ["501", "AUSTRALIA"]
+      - ["503", "NUEVA ZELANDA"]
+      - ["504", "SAMOA OCCIDENTAL"]
+      - ["506", "FIJI"]
+      - ["507", "PAPUA NUEVA GUINEA"]
+      - ["508", "TONGA"]
+      - ["509", "PALAO (BELAU) ISLAS"]
+      - ["510", "KIRIBATI"]
+      - ["511", "MARSHALL ISLAS"]
+      - ["512", "MICRONESIA"]
+      - ["513", "NAURU"]
+      - ["514", "SALOMON ISLAS"]
+      - ["515", "TUVALU"]
+      - ["516", "VANUATU"]
+      - ["517", "GUAM"]
+      - ["518", "ISLAS COCOS (KEELING)"]
+      - ["519", "ISLAS COOK"]
+      - ["520", "ISLAS NAVIDAD"]
+      - ["521", "MIDWAY ISLAS"]
+      - ["522", "NIUE ISLA"]
+      - ["523", "NORFOLK ISLA"]
+      - ["524", "NUEVA CALEDONIA"]
+      - ["525", "PITCAIRN, ISLA"]
+      - ["526", "POLINESIA FRANCESA"]
+      - ["529", "TIMOR DEL ESTE"]
+      - ["530", "TOKELAI"]
+      - ["531", "WAKE ISLA"]
+      - ["532", "WALLIS Y FUTUNA, ISLAS"]
+      - ["534", "SINT MAARTEN (DUTCH PART)"]
+      - ["590", "SAINT BARTHELEMY"]
+      - ["593", "ECUADOR"]
+      - ["594", "AGUAS INTERNACIONALES"]
+      - ["595", "ALTO VOLTA"]
+      - ["596", "BIELORRUSIA"]
+      - ["597", "COTE DÍVOIRE"]
+      - ["598", "CYPRUS"]
+      - ["599", "REPUBLICA CHECA"]
+      - ["600", "FALKLAND ISLANDS"]
+      - ["601", "LATVIA"]
+      - ["602", "LIBIA"]
+      - ["603", "NORTHERN MARIANA ISL"]
+      - ["604", "ST. PIERRE AND MIQUE"]
+      - ["605", "SYRIAN ARAB REPUBLIC"]
+      - ["606", "TERRITORIO ANTARTICO BRITANICO"]
+      - ["607", "TERRITORIO BRITANICO OCEANO IN"]
+      - ["688", "SERBIA"]
+      - ["831", "GUERNSEY"]
+      - ["833", "ISLE OF MAN"]
+
+# Tarifas de IVA (Tabla 12). La ficha de febrero de 2025 no incluye la tarifa
+# del 15% vigente desde el 01/04/2024 (Ley Orgánica para Enfrentar el Conflicto
+# Armado Interno), ni las tarifas especiales del 5% y 8%; se agregan aquí para
+# la verificación del monto de IVA, que solo genera advertencias.
+tarifas_iva:
+  - [12, 2000-01-01, 2001-05-31]
+  - [14, 2001-06-01, 2001-08-31]
+  - [12, 2001-09-01, 2016-05-31]
+  - [14, 2016-06-01, 2017-05-31]
+  - [12, 2017-06-01, 2024-03-31]
+  - [15, 2024-04-01, null]
+  - [5, 2024-04-01, null]
+  - [8, 2021-01-01, null]
+
+# Campo XML -> tabla de catálogo
+campos:
+  Mes: t1_mes
+  tpIdProv: t2_compras
+  tpIdProvReemb: t2_compras
+  tpIdCliente: t2_ventas
+  tpIdClienteEx: t2_exportacion
+  tipoComprobante: t4_comprobantes
+  tipoComprobanteReemb: t4_comprobantes
+  docModificado: t4_comprobantes
+  codSustento: t5_sustento
+  distAduanero: t6_distritos
+  regimen: t7_regimen
+  tarjetaCredito: t8_tarjetas
+  tipoFideicomiso: t9_fideicomisos
+  exportacionDe: t10_exportacion
+  formaPago: t13_formas_pago
+  tipoProv: t14_tipo_proveedor
+  tipoCliente: t14_tipo_proveedor
+  tipoCli: t14_tipo_proveedor
+  pagoLocExt: t15_tipo_pago
+  paisEfecPago: t16_paises
+  paisEfecPagoGen: t16_paises
+  paisEfecExp: t16_paises
+  tipIngExt: t18_ingresos_exterior
+  tipoRegi: t19_regimen_exterior
+  tipoEmision: t20_emision
+  tipoCompe: t21_compensaciones
+  parteRel: si_no
+  parteRelVtas: si_no
+  parteRelExp: si_no
+  parteRelRec: si_no
+  parteRelFid: si_no
+  aplicConvDobTrib: si_no_na
+  pagExtSujRetNorLeg: si_no_na
+  pagoRegFis: si_no_na
+  ingExtGravOtroPais: si_no
