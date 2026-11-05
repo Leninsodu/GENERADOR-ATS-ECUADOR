@@ -35,10 +35,14 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install ".[dev]" pyinstaller
       - name: Pruebas
+        shell: bash
         env:
           QT_QPA_PLATFORM: offscreen
-        # os._exit evita un cierre con error de Qt en Windows al terminar Python (las pruebas ya terminaron)
-        run: python -c "import os, pytest; os._exit(int(pytest.main(['-q'])))"
+        # En Windows, Qt puede cerrar el proceso con error al terminar Python aunque todas las
+        # pruebas pasen; por eso el resultado se lee del informe JUnit y no del código de salida.
+        run: |
+          python -m pytest -q --junitxml=resultado-pruebas.xml || true
+          python -c "import sys, xml.etree.ElementTree as ET; r = ET.parse('resultado-pruebas.xml').getroot(); s = r if r.tag == 'testsuite' else r[0]; f = int(s.get('failures')) + int(s.get('errors')); print('pruebas:', s.get('tests'), 'fallas:', f); sys.exit(1 if f or int(s.get('tests')) == 0 else 0)"
       - name: Construir
         run: python empaquetar/construir.py
       - uses: actions/upload-artifact@v4

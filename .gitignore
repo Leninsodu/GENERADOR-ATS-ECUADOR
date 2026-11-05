@@ -7,3 +7,4 @@ dist/
 # Datos de contribuyentes: no versionar anexos reales
 AT-*.xml
 AT*.zip
+resultado-pruebas.xml
