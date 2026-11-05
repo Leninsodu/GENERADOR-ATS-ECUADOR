@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "atsapp"
-version = "0.1.0"
+version = "1.0.0"
 description = "Editor y validador del Anexo Transaccional Simplificado (ATS) del SRI de Ecuador, multiplataforma"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -13,6 +13,7 @@ dependencies = [
     "lxml>=5.0",
     "PyYAML>=6.0",
     "pypdf>=4.0",
+    "openpyxl>=3.1",
 ]
 
 [project.optional-dependencies]

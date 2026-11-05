@@ -34,7 +34,7 @@ def test_esquema_estructura(esquema):
     assert compra.es_repetible and not compra.es_simple
     assert [h.nombre for h in compra.hijos][:3] == ["codSustento", "tpIdProv", "idProv"]
     assert raiz.hijo("IdInformante").tipo.errores(INFORMANTE) == []
-    assert raiz.hijo("IdInformante").tipo.errores("17919122920") != []
+    assert raiz.hijo("IdInformante").tipo.errores("17999999070") != []
 
 
 def test_patrones_compilan(esquema):
@@ -220,6 +220,19 @@ def test_identificaciones():
     assert not ruc_valido(INFORMANTE[:9] + str((int(INFORMANTE[9]) + 1) % 10) + "001")
 
 
+def test_ruc_como_dimm():
+    from atsapp.identificacion import ruc_aceptado
+
+    sociedad_rara = INFORMANTE[:9] + str((int(INFORMANTE[9]) + 1) % 10) + "001"
+    assert ruc_aceptado(sociedad_rara)  # sociedades: DIMM no exige el dígito verificador
+    assert ruc_aceptado("1391931821001")  # RUC real de sociedad que no cumple el módulo 11
+    assert ruc_aceptado(_cedula("171234567") + "001")
+    malo = _cedula("171234567")
+    malo = malo[:9] + str((int(malo[9]) + 1) % 10)
+    assert not ruc_aceptado(malo + "001")  # persona natural con cédula inválida
+    assert not ruc_aceptado(INFORMANTE[:10] + "002")  # no termina en 001
+
+
 def test_clave_de_acceso(esquema, anexo_real):
     from atsapp.identificacion import clave_acceso_valida, ruc_en_clave_acceso
 
@@ -259,3 +272,15 @@ def test_total_como_dimm_ignora_ventas_electronicas(esquema, catalogos):
     assert any("emisión electrónica (E) no se suman" in t for t in errores)
     v.poner("tipoEmision", "F")
     assert total_ventas(doc.raiz) == 100
+
+
+def test_notas_de_credito_sin_formas_de_pago(esquema, catalogos):
+    doc = _doc_minimo(esquema)
+    nc = _compra(doc, tipoComprobante="04", baseImpGrav="600.00", montoIva="90.00")
+    for k, v in dict(docModificado="01", estabModificado="001", ptoEmiModificado="001", secModificado="1",
+                     autModificado="1234567890").items():
+        nc.poner(k, v)
+    assert not any("forma de pago" in t for t in _textos(doc, catalogos))
+    fp = nc.agregar("formasDePago")
+    fp.hijo("formaPago").valor = "20"
+    assert any("no aplican para notas de crédito" in t for t in _textos(doc, catalogos))

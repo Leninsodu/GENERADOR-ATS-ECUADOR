@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 
-from PySide6.QtCore import QCoreApplication, QLocale
+from PySide6.QtCore import QCoreApplication, QLibraryInfo, QLocale, QTranslator
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from .. import rutas
@@ -17,6 +17,10 @@ def ejecutar(argumentos: list[str]) -> int:
     QCoreApplication.setApplicationName("Editor ATS")
     QLocale.setDefault(QLocale(QLocale.Spanish, QLocale.Ecuador))
     app = QApplication([sys.argv[0]] + argumentos)
+    # botones estándar de Qt (Sí/No, Cancelar, Abrir…) en español
+    traductor = QTranslator(app)
+    if traductor.load("qtbase_es", QLibraryInfo.path(QLibraryInfo.TranslationsPath)):
+        app.installTranslator(traductor)
 
     from .dialogos import DialogoEsquema
     from .ventana import VentanaPrincipal

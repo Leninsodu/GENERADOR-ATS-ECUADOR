@@ -6,8 +6,8 @@ import re
 from decimal import Decimal
 from pathlib import Path
 
-from PySide6.QtCore import QByteArray, QSettings, Qt, QTimer
-from PySide6.QtGui import QAction, QGuiApplication, QKeySequence
+from PySide6.QtCore import QByteArray, QSettings, Qt, QTimer, QUrl
+from PySide6.QtGui import QAction, QDesktopServices, QGuiApplication, QKeySequence
 from PySide6.QtWidgets import (QDockWidget, QFileDialog, QFrame, QGroupBox, QHBoxLayout, QLabel, QMainWindow,
                                QMessageBox, QPushButton, QScrollArea, QStackedWidget, QTabWidget, QVBoxLayout,
                                QWidget)
@@ -57,10 +57,8 @@ class VentanaPrincipal(QMainWindow):
         self.dock = QDockWidget("Validación", self)
         self.dock.setObjectName("dock_validacion")
         self.dock.setWidget(self.panel_mensajes)
-        self.dock.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable
-                              | QDockWidget.DockWidgetClosable)
+        self.dock.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock)
-        self.menu_ver.addAction(self.dock.toggleViewAction())
 
         self.lbl_estado = QLabel()
         self.statusBar().addPermanentWidget(self.lbl_estado)
@@ -69,6 +67,7 @@ class VentanaPrincipal(QMainWindow):
 
         if not self._restaurar_geometria():
             self.resizeDocks([self.dock], [int(self.height() * 0.22)], Qt.Vertical)
+        self.dock.show()  # ya no se puede cerrar; si quedó oculto en una sesión anterior, se muestra
         self._actualizar_titulo()
         self._actualizar_acciones()
 
@@ -92,6 +91,8 @@ class VentanaPrincipal(QMainWindow):
                                    "Guarda una copia en otra ubicación; se sigue trabajando con el archivo actual")
         self.a_exportar = accion("&Exportar para el SRI (ZIP)…", "Ctrl+E", self.exportar,
                                  "Valida el anexo y genera el archivo ATmmaaaa.zip para subir al SRI")
+        self.a_excel = accion("Generar E&xcel (XLSX)…", "Ctrl+Shift+X", self.exportar_excel,
+                              "Genera un libro de Excel con todos los datos del anexo y una hoja de resumen")
         self.a_salir = accion("&Salir", QKeySequence.Quit, self.close)
         self.a_validar = accion("&Validar anexo", "F5", lambda: self.validar(mostrar=True))
         self.a_importar = accion("&Importar comprobantes electrónicos (XML o PDF)…", "Ctrl+I",
@@ -102,38 +103,48 @@ class VentanaPrincipal(QMainWindow):
         self.a_esquema = accion("Importar &esquema del SRI…", None, self.importar_esquema)
         self.a_acerca = accion("&Acerca de", None, self.acerca_de)
 
-        barra = self.menuBar()
-        m = barra.addMenu("&Archivo")
-        for a in (self.a_nuevo, self.a_abrir):
-            m.addAction(a)
-        self.menu_recientes = m.addMenu("Abrir &reciente")
-        self.menu_recientes.aboutToShow.connect(self._llenar_recientes)
-        m.addSeparator()
-        for a in (self.a_guardar, self.a_guardar_en, self.a_guardar_como, self.a_exportar):
-            m.addAction(a)
-        m.addSeparator()
-        m.addAction(self.a_salir)
-        m = barra.addMenu("A&nexo")
-        m.addAction(self.a_importar)
-        m.addSeparator()
-        m.addAction(self.a_validar)
-        m.addAction(self.a_totales)
-        self.menu_ver = barra.addMenu("&Ver")
-        m = barra.addMenu("&Herramientas")
-        m.addAction(self.a_esquema)
-        m = barra.addMenu("A&yuda")
-        m.addAction(self.a_acerca)
+        # Sin barra de menús: solo la barra de herramientas. Las acciones que no están en ella
+        # se registran en la ventana para que sus atajos de teclado sigan funcionando.
+        self.menuBar().setVisible(False)
+        for a in (self.a_guardar_como, self.a_salir):
+            self.addAction(a)
 
         tb = self.addToolBar("Principal")
         tb.setObjectName("barra_principal")
         tb.setMovable(False)
+        tb.toggleViewAction().setVisible(False)
         tb.setToolButtonStyle(Qt.ToolButtonTextOnly)
-        for a in (self.a_nuevo, self.a_abrir, self.a_guardar, self.a_guardar_en, None, self.a_importar, self.a_validar,
-                  self.a_exportar):
+        for a in (self.a_nuevo, self.a_abrir, self.a_guardar, self.a_guardar_en, None, self.a_importar, self.a_excel,
+                  self.a_validar, self.a_exportar):
             if a is None:
+                self._espacio(tb, 28)
                 tb.addSeparator()
+                self._espacio(tb, 28)
             else:
                 tb.addAction(a)
+        # acciones principales resaltadas: (fondo, fondo al pasar el mouse, al pulsar)
+        colores = {self.a_importar: ("black", "#333333", "#555555"),
+                   self.a_validar: ("#1565c0", "#1e88e5", "#0d47a1"),    # azul
+                   self.a_exportar: ("#2e7d32", "#43a047", "#1b5e20")}   # verde
+        for a, (fondo, encima, pulsado) in colores.items():
+            tb.widgetForAction(a).setStyleSheet(
+                f"QToolButton {{ background: {fondo}; color: white; border-radius: 4px; padding: 4px 10px;"
+                f" margin: 2px 3px; }}"
+                f"QToolButton:hover {{ background: {encima}; }}"
+                f"QToolButton:pressed {{ background: {pulsado}; }}"
+                "QToolButton:disabled { background: #9e9e9e; color: #eeeeee; }")
+        tb.widgetForAction(self.a_excel).setStyleSheet(
+            "QToolButton { background: white; color: black; border: 1px solid #555555; border-radius: 4px;"
+            " padding: 3px 10px; margin: 2px 3px; }"
+            "QToolButton:hover { background: #eeeeee; }"
+            "QToolButton:pressed { background: #dddddd; }"
+            "QToolButton:disabled { color: #9e9e9e; border-color: #bdbdbd; }")
+
+    @staticmethod
+    def _espacio(tb, ancho: int) -> None:
+        hueco = QWidget()
+        hueco.setFixedWidth(ancho)
+        tb.addWidget(hueco)
 
     def _crear_bienvenida(self) -> QWidget:
         w = QWidget()
@@ -268,7 +279,7 @@ class VentanaPrincipal(QMainWindow):
 
     def _actualizar_acciones(self) -> None:
         hay = self.doc is not None
-        for a in (self.a_guardar, self.a_guardar_como, self.a_guardar_en, self.a_exportar, self.a_validar, self.a_totales,
+        for a in (self.a_guardar, self.a_guardar_como, self.a_guardar_en, self.a_exportar, self.a_excel, self.a_validar, self.a_totales,
                   self.a_importar):
             a.setEnabled(hay)
 
@@ -368,11 +379,22 @@ class VentanaPrincipal(QMainWindow):
     def _confirmar_descartar(self) -> bool:
         if not self.modificado:
             return True
-        r = QMessageBox.question(self, "Cambios sin guardar", "El anexo tiene cambios sin guardar. ¿Desea guardarlos?",
-                                 QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel, QMessageBox.Save)
-        if r == QMessageBox.Save:
+        caja = QMessageBox(QMessageBox.Question, "Cambios sin guardar",
+                           "El anexo tiene cambios sin guardar. ¿Desea guardarlos?", parent=self)
+        b_no = caja.addButton("No guardar", QMessageBox.ActionRole)
+        b_cancelar = caja.addButton("Cancelar", QMessageBox.ActionRole)
+        b_guardar = caja.addButton("Guardar", QMessageBox.ActionRole)
+        estilo = "QPushButton {{ background: {0}; color: {1}; border: 1px solid {2}; border-radius: 4px; " \
+                 "padding: 6px 16px; min-width: 90px; }} QPushButton:hover {{ border: 2px solid {2}; }}"
+        b_no.setStyleSheet(estilo.format("#f4a6a6", "black", "#d77a7a"))       # rojo pastel
+        b_cancelar.setStyleSheet(estilo.format("black", "white", "#555555"))
+        b_guardar.setStyleSheet(estilo.format("#8fd19e", "black", "#4caf68"))  # verde
+        caja.setDefaultButton(b_guardar)
+        caja.setEscapeButton(b_cancelar)
+        caja.exec()
+        if caja.clickedButton() is b_guardar:
             return self.guardar()
-        return r == QMessageBox.Discard
+        return caja.clickedButton() is b_no
 
     def poner_documento(self, doc: Documento, ruta: Path | None) -> None:
         self.doc = doc
@@ -521,6 +543,39 @@ class VentanaPrincipal(QMainWindow):
                                 f"Se generó {p.name} con el archivo {self.doc.nombre_sugerido('.xml')} adentro.\n\n"
                                 "Súbalo en el portal del SRI (SRI en línea → Anexos).")
 
+    def exportar_excel(self) -> None:
+        if self.doc is None:
+            return
+        carpeta = self.ruta.parent if self.ruta else Path(QSettings().value("ultima_carpeta", str(Path.home())))
+        nombre = self.doc.nombre_sugerido(".xml").removesuffix(".xml") + ".xlsx"
+        ruta, _ = QFileDialog.getSaveFileName(self, "Generar Excel del anexo", str(carpeta / nombre),
+                                              "Libro de Excel (*.xlsx)")
+        if not ruta:
+            return
+        p = Path(ruta)
+        if p.suffix.lower() != ".xlsx":
+            p = p.with_suffix(".xlsx")
+        from ..excel import exportar_xlsx
+
+        try:
+            exportar_xlsx(self.doc, p, self.catalogos)
+        except PermissionError:
+            QMessageBox.critical(self, "No se pudo guardar",
+                                 f"No se pudo escribir {p.name}. ¿Está abierto en otro programa? Ciérrelo e intente "
+                                 "de nuevo.")
+            return
+        except OSError as e:
+            QMessageBox.critical(self, "Error al generar el Excel", str(e))
+            return
+        caja = QMessageBox(QMessageBox.Information, "Excel generado",
+                           f"Se generó {p.name} con una hoja de resumen y una hoja por cada tabla del anexo.",
+                           parent=self)
+        b_abrir = caja.addButton("Abrir el Excel", QMessageBox.AcceptRole)
+        caja.addButton("Cerrar", QMessageBox.RejectRole)
+        caja.exec()
+        if caja.clickedButton() is b_abrir:
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(p)))
+
     def importar_comprobantes(self, rutas: list[Path] | None = None) -> None:
         if self.doc is None:
             QMessageBox.information(self, "Importar comprobantes",
@@ -562,6 +617,9 @@ class VentanaPrincipal(QMainWindow):
             return
         res = comprobantes.importar(self.doc, dlg.propuestas)
         res_ret = retenciones.aplicar(self.doc, dlg.prop_ret)
+        for p in dlg.prop_ret:
+            if p.seleccionado and p.destino == "compras":
+                retenciones.recordar_codigos(p.retencion)
         self._ventas_pendientes += res.claves_ventas + res_ret.claves_ventas
         raiz = self.doc.raiz
         for nombre, panel in self.paneles.items():
@@ -641,13 +699,6 @@ class VentanaPrincipal(QMainWindow):
         lista = [str(ruta)] + [r for r in self._recientes() if r != str(ruta)]
         QSettings().setValue("recientes", lista[:MAX_RECIENTES])
         self._actualizar_bienvenida()
-
-    def _llenar_recientes(self) -> None:
-        self.menu_recientes.clear()
-        for r in self._recientes():
-            self.menu_recientes.addAction(r, lambda r=r: self.abrir(r))
-        if self.menu_recientes.isEmpty():
-            self.menu_recientes.addAction("(vacío)").setEnabled(False)
 
     # --- ventana -----------------------------------------------------------------------------
     def _restaurar_geometria(self) -> bool:

@@ -39,6 +39,11 @@ class LineaRetencion:
     cod_doc_sustento: str = ""
     num_doc_sustento: str = ""  # 15 dígitos: establecimiento + punto + secuencial
     fecha_doc_sustento: dt.date | None = None
+    codigo_leido: str | None = None  # código tal como vino en el comprobante (None = no aplica)
+
+    def __post_init__(self) -> None:
+        if self.codigo_leido is None:
+            self.codigo_leido = self.codigo
 
     @property
     def serie_sustento(self) -> tuple[str, str, str]:
@@ -173,41 +178,153 @@ def desde_texto_ride(texto: str, clave: str, nombre: str) -> Retencion:
     r.id_retenido = buscar(r"Identificaci[oó]n:?[ \t]+([0-9A-Za-z-]{3,20})")
     r.tipo_id_retenido = "04" if len(r.id_retenido) == 13 else "05" if len(r.id_retenido) == 10 else "06"
     r.periodo_fiscal = buscar(r"(?:Ejercicio|Per[ií]odo)\s+Fiscal:?[ \t]+(\d{2}/\d{4})")
-    for l in texto.splitlines():
-        imp = re.search(r"\b(RENTA|IVA|ISD)\b", l, re.IGNORECASE)
-        doc = re.search(r"(?<!\d)(\d{3}-?\d{3}-?\d{9})(?!\d)", l)
-        if not imp or not doc:
-            continue
-        resto = l[doc.end():]
-        numeros = re.findall(_DEC, resto)
-        if len(numeros) < 3:
-            continue
-        impuesto = {"RENTA": RENTA, "IVA": IVA, "ISD": ISD}[imp.group(1).upper()]
-        base, porcentaje, valor = _num(numeros[0]), _num(numeros[-2]), _num(numeros[-1])
-        sin_fechas = re.sub(r"\d{2}/\d{2}/\d{4}|\d{2}/\d{4}", " ", resto)
-        sin_decimales = re.sub(_DEC, " ", sin_fechas)
-        codigos = re.findall(r"(?<![\d.])(\d{1,4}[A-Z]?)(?![\d.])", sin_decimales)
-        if impuesto == IVA:
-            codigo = CODIGO_IVA_POR_PORCENTAJE.get(porcentaje, codigos[0] if codigos else "")
-        else:
-            codigo = codigos[0] if codigos else ""
-        if not r.periodo_fiscal:
-            m = re.search(r"(?<!/)(\d{2}/\d{4})(?!\d)", resto)
-            r.periodo_fiscal = m.group(1) if m else ""
-        fecha = re.search(r"(\d{2}/\d{2}/\d{4})", resto)
-        tipo_doc = "04" if re.search(r"NOTA\s+DE\s+CR", l, re.IGNORECASE) else \
-            "05" if re.search(r"NOTA\s+DE\s+D", l, re.IGNORECASE) else "01"
-        r.lineas.append(LineaRetencion(impuesto, codigo, base, porcentaje, valor, tipo_doc,
-                                       re.sub(r"\D", "", doc.group(1)), _fecha(fecha.group(1)) if fecha else None))
-        if impuesto == RENTA and not codigo:
-            r.avisos_lectura.append("No se pudo leer el código de retención de renta del PDF")
-        if abs(base * porcentaje / 100 - valor) > Decimal("0.02"):
-            r.avisos_lectura.append(f"Línea leída del PDF sin cuadrar: {base} x {porcentaje}% ≠ {valor}")
+    r.lineas.extend(_filas_tabla_ride(texto))
+    periodo = _periodo_en_tabla(texto)
+    if not r.periodo_fiscal and periodo:
+        r.periodo_fiscal = periodo
+    for l in r.lineas:
+        if l.impuesto == RENTA and not l.codigo:
+            r.avisos_lectura.append("El PDF no trae el código de retención de renta: elíjalo en la columna «Cód. renta»")
+            break
+    for l in r.lineas:
+        if abs(l.base * l.porcentaje / 100 - l.valor) > Decimal("0.02"):
+            r.avisos_lectura.append(f"Línea leída del PDF sin cuadrar: {l.base} x {l.porcentaje}% ≠ {l.valor}")
     if not r.lineas:
         from .comprobantes import ErrorComprobante
 
         raise ErrorComprobante("No se encontraron valores retenidos en el PDF de la retención")
     return r
+
+
+_FILA_RIDE = re.compile(
+    rf"({_DEC})\s+(?:Impuesto\s+a\s+la\s+)?(RENTA|IVA|ISD)\b\s+(?:(\d{{1,4}}[A-Z]?\d?)\s+)?({_DEC}|\d{{1,3}})\s+({_DEC})",
+    re.IGNORECASE)
+_FECHAS = re.compile(r"\d{2}/\d{2}/\d{4}|\d{2}/\d{4}")
+
+
+def _region_tabla(texto: str) -> list[str]:
+    """Líneas de la tabla de retenciones del RIDE (entre el encabezado e 'Información Adicional')."""
+    lineas = texto.splitlines()
+    ini = next((i for i, l in enumerate(lineas)
+                if re.search(r"Comprobante", l, re.I) and re.search(r"Impuesto|Base\s+Imponible|Porcentaje|Retenido", l, re.I)),
+               -1)
+    fin = next((i for i in range(ini + 1, len(lineas)) if re.search(r"Informaci[oó]n\s+Adicional", lineas[i], re.I)),
+               len(lineas))
+    return lineas[ini + 1:fin]
+
+
+def _periodo_en_tabla(texto: str) -> str:
+    for l in _region_tabla(texto):
+        m = re.search(r"(?<![\d/])(\d{2}/\d{4})(?![\d/])", l)
+        if m:
+            return m.group(1)
+    return ""
+
+
+def _filas_tabla_ride(texto: str) -> list[LineaRetencion]:
+    """Filas de la tabla del RIDE. Admite números de comprobante y textos partidos en varias líneas."""
+    from .comprobantes import _fecha, _num
+
+    region = _region_tabla(texto)
+    filas: list[tuple[int, re.Match]] = []
+    docs: list[tuple[int, str, str, dt.date | None]] = []  # (línea, número 15 dígitos, tipo, fecha)
+    acumulado, inicio_doc = "", -1
+    tipo_actual, fecha_actual = "01", None
+    for i, l in enumerate(region):
+        if re.search(r"LIQUIDACI", l, re.I):
+            tipo_actual = "03"
+        elif re.search(r"NOTA\s+DE\s+CR", l, re.I):
+            tipo_actual = "04"
+        elif re.search(r"NOTA\s+DE\s+D[EÉ]B", l, re.I):
+            tipo_actual = "05"
+        elif re.search(r"FACTURA", l, re.I):
+            tipo_actual = "01"
+        f = re.search(r"(\d{2}/\d{2}/\d{4})", l)
+        if f:
+            fecha_actual = _fecha(f.group(1))
+        resto = l
+        for m in _FILA_RIDE.finditer(l):
+            filas.append((i, m))
+        resto = _FILA_RIDE.sub(" ", resto)
+        resto = re.sub(r"(\d{3})-(\d{3})-(\d{9})", r"\1\2\3", resto)
+        resto = _FECHAS.sub(" ", resto)
+        resto = re.sub(_DEC, " ", resto)
+        for tok in re.findall(r"(?<![\d.,])\d+(?![\d.,])", resto):
+            if len(acumulado) + len(tok) > 15:
+                acumulado, inicio_doc = "", -1
+            if not acumulado:
+                inicio_doc = i
+            acumulado += tok
+            if len(acumulado) == 15:
+                docs.append((inicio_doc, acumulado, tipo_actual, fecha_actual))
+                acumulado, inicio_doc = "", -1
+    salida = []
+    for i, m in filas:
+        doc = min(docs, key=lambda d: abs(d[0] - i)) if docs else (i, "", "01", None)
+        impuesto = {"RENTA": RENTA, "IVA": IVA, "ISD": ISD}[m.group(2).upper()]
+        porcentaje = _num(m.group(4))
+        codigo = m.group(3) or ""
+        if impuesto == IVA and not codigo:
+            codigo = CODIGO_IVA_POR_PORCENTAJE.get(porcentaje, "")
+        salida.append(LineaRetencion(impuesto, codigo, _num(m.group(1)), porcentaje, _num(m.group(5)),
+                                     doc[2], doc[1], doc[3]))
+    return salida
+
+
+# --- códigos de renta recordados por proveedor --------------------------------------------------
+def _ruta_codigos():
+    from . import rutas
+
+    return rutas.carpeta_datos() / "codigos_renta.json"
+
+
+def _clave_pct(porcentaje: Decimal) -> str:
+    return f"{porcentaje.normalize():f}"
+
+
+def codigos_recordados() -> dict[str, dict[str, str]]:
+    import json
+
+    try:
+        return json.loads(_ruta_codigos().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def recordar_codigos(ret: "Retencion") -> None:
+    """Guarda el código de renta usado con este proveedor para cada porcentaje."""
+    import json
+
+    datos = codigos_recordados()
+    cambios = False
+    for l in ret.lineas:
+        if l.impuesto == RENTA and l.codigo:
+            por_ruc = datos.setdefault(ret.id_retenido, {})
+            if por_ruc.get(_clave_pct(l.porcentaje)) != l.codigo:
+                por_ruc[_clave_pct(l.porcentaje)] = l.codigo
+                cambios = True
+    if cambios:
+        tmp = _ruta_codigos().with_suffix(".tmp")
+        tmp.write_text(json.dumps(datos, indent=1, sort_keys=True), encoding="utf-8")
+        tmp.replace(_ruta_codigos())
+
+
+def _codigo_sugerido(doc: Documento, proveedor: str, porcentaje: Decimal) -> str:
+    compras = doc.raiz.hijo("compras")
+    for c in compras.lista("detalleCompras") if compras is not None else []:
+        if c.texto("idProv") != proveedor or c.hijo("air") is None:
+            continue
+        for a in c.hijo("air").lista("detalleAir"):
+            try:
+                if a.texto("codRetAir") and Decimal(a.texto("porcentajeAir")) == porcentaje:
+                    return a.texto("codRetAir")
+            except ArithmeticError:
+                continue
+    return codigos_recordados().get(proveedor, {}).get(_clave_pct(porcentaje), "")
+
+
+def lineas_sin_codigo(ret: "Retencion") -> list[LineaRetencion]:
+    return [l for l in ret.lineas if l.impuesto == RENTA and getattr(l, "codigo_leido", l.codigo) == ""]
 
 
 # --- análisis -------------------------------------------------------------------------------
@@ -267,6 +384,8 @@ def analizar(doc: Documento, retenciones: list[Retencion], propuestas_comprobant
             omitir("Archivo repetido en esta importación")
         vistos.add(clave)
         for t in ret.avisos_lectura:
+            if "código de retención de renta" in t:
+                continue  # en ventas no se usa; en compras se trata más abajo
             aviso(t)
         if any(l.impuesto == ISD for l in ret.lineas):
             aviso("Incluye retención de ISD, que no se registra en el ATS")
@@ -284,6 +403,15 @@ def analizar(doc: Documento, retenciones: list[Retencion], propuestas_comprobant
                     omitir(f"No hay ventas del cliente {ret.ruc_agente} en el anexo: importe primero su factura")
             objetivo = f"Venta a {ret.ruc_agente} {ret.razon_agente}".strip()
         elif estado != OMITIR:
+            sin_codigo = lineas_sin_codigo(ret)
+            for l in sin_codigo:
+                if not l.codigo:
+                    l.codigo = _codigo_sugerido(doc, ret.id_retenido, l.porcentaje)
+            if sin_codigo:
+                if all(l.codigo for l in sin_codigo):
+                    aviso("Código de renta tomado de compras anteriores de este proveedor; verifíquelo en «Cód. renta»")
+                else:
+                    aviso("El comprobante no trae el código de retención de renta: elíjalo en la columna «Cód. renta»")
             faltan, registradas = [], 0
             for cod, num in ret.documentos():
                 compra = _buscar_compra(doc, ret.id_retenido, cod, num)

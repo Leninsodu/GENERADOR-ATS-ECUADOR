@@ -14,7 +14,7 @@ from decimal import Decimal, InvalidOperation
 
 from .catalogos import Catalogos, rango_periodo
 from .documento import Documento, Nodo
-from .identificacion import CONSUMIDOR_FINAL, cedula_valida, ruc_en_clave_acceso, ruc_valido
+from .identificacion import CONSUMIDOR_FINAL, cedula_valida, ruc_aceptado, ruc_en_clave_acceso
 from .validacion import Mensaje, Severidad
 
 E, A = Severidad.ERROR, Severidad.ADVERTENCIA
@@ -25,6 +25,8 @@ E, A = Severidad.ERROR, Severidad.ADVERTENCIA
 COMPROBANTES_QUE_RESTAN = {"04", "51", "372"}
 COMPROBANTES_QUE_SUMAN = {"05", "18", "44", "49", "50", "52", "370", "371", "373"}
 DESDE_SOLO_FISICAS = (2016, 1)
+# Notas de crédito: no llevan formas de pago (si las llevan, DIMM lo marca como error)
+NOTAS_DE_CREDITO = {"04", "47", "51"}
 FECHA_CAMBIO_UMBRAL_PAGO = dt.date(2023, 12, 20)
 TOLERANCIA_IVA = Decimal("0.05")
 
@@ -96,8 +98,8 @@ class _Reglas:
     def cabecera(self) -> None:
         r = self.raiz
         ruc = r.texto("IdInformante")
-        if len(ruc) == 13 and ruc.isdigit() and not ruc_valido(ruc):
-            self.msg(A, r, "El RUC del informante no cumple el dígito verificador. Verifique que esté bien escrito.", "IdInformante")
+        if len(ruc) == 13 and ruc.isdigit() and not ruc_aceptado(ruc):
+            self.msg(E, r, "El RUC del informante no es válido (la cédula que contiene no cumple el dígito verificador).", "IdInformante")
         if self.doc.anio is not None and self.doc.anio < 2002:
             self.msg(E, r, "Solo se aceptan períodos desde el año 2002.", "Anio")
         if r.texto("regimenMicroempresa") and r.texto("Mes") not in ("06", "12"):
@@ -134,10 +136,11 @@ class _Reglas:
         if clase == "ruc":
             if len(ident) != 13 or not ident.isdigit():
                 self.msg(E, n, "El RUC debe tener 13 dígitos.", campo_id)
-            elif not ruc_valido(ident) and ruc_en_clave_acceso(n.texto("autorizacion")) != ident:
-                # los RUC nuevos pueden no cumplir el módulo 11; si viene en una clave de acceso
-                # válida de un comprobante electrónico autorizado, el SRI ya lo verificó
-                self.msg(A, n, f"El RUC {ident} no cumple el dígito verificador.", campo_id)
+            elif ident[10:] != "001":
+                self.msg(E, n, f"El RUC {ident} debe terminar en 001.", campo_id)
+            elif not ruc_aceptado(ident) and ruc_en_clave_acceso(n.texto("autorizacion")) != ident:
+                # mismo criterio que DIMM: en personas naturales la cédula debe ser válida
+                self.msg(E, n, f"El RUC {ident} no es válido: la cédula que contiene no cumple el dígito verificador.", campo_id)
         elif clase == "cedula":
             if len(ident) != 10 or not ident.isdigit():
                 self.msg(E, n, "La cédula debe tener 10 dígitos.", campo_id)
@@ -216,6 +219,10 @@ class _Reglas:
         umbral = Decimal(500) if ref is None or ref >= FECHA_CAMBIO_UMBRAL_PAGO else Decimal(1000)
         formas = c.hijo("formasDePago")
         tiene = formas is not None and any(h.valor for h in formas.lista("formaPago"))
+        if c.texto("tipoComprobante") in NOTAS_DE_CREDITO:
+            if tiene:
+                self.msg(E, c, "Las formas de pago no aplican para notas de crédito.", "formasDePago")
+            return
         if total > umbral and not tiene:
             self.msg(E, c, f"La compra suma {total} (más de USD {umbral}); debe registrar al menos una forma de pago.", "formasDePago")
 
@@ -233,7 +240,11 @@ class _Reglas:
                 if v.texto("parteRelVtas") == "" and v.texto("tpIdCliente") in ("04", "05", "06"):
                     self.msg(E, v, "Debe indicar si el cliente es parte relacionada (SI/NO).", "parteRelVtas")
                 formas = v.hijo("formasDePago")
-                if v.texto("tipoComprobante") not in COMPROBANTES_QUE_RESTAN and (formas is None or not any(h.valor for h in formas.lista("formaPago"))):
+                tiene_formas = formas is not None and any(h.valor for h in formas.lista("formaPago"))
+                if v.texto("tipoComprobante") in NOTAS_DE_CREDITO:
+                    if tiene_formas:
+                        self.msg(E, v, "Las formas de cobro no aplican para notas de crédito.", "formasDePago")
+                elif not tiene_formas:
                     self.msg(E, v, "Debe registrar al menos una forma de cobro.", "formasDePago")
                 clave = tuple(v.texto(k) for k in ("tpIdCliente", "idCliente", "tipoComprobante", "tipoEmision"))
                 if all(clave[:3]):

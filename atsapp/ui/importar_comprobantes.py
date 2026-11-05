@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 from PySide6.QtCore import QByteArray, QSettings, Qt
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QDialog, QDialogButtonBox, QHBoxLayout,
@@ -10,13 +12,13 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QDial
 from ..catalogos import Catalogos
 from ..comprobantes import AVISO, OK, ArchivoNoLeido, Comprobante, Propuesta, analizar
 from ..documento import Documento
-from ..retenciones import PropuestaRetencion, Retencion
+from ..retenciones import RENTA, PropuestaRetencion, Retencion, lineas_sin_codigo
 from ..retenciones import analizar as analizar_retenciones
 
-COLUMNAS = ["", "Estado", "Va a", "Proveedor / Cliente", "Tipo", "Número", "Emisión", "Sustento", "Base gravada",
-            "Base 0%", "IVA", "Total", "Observaciones", "Archivo"]
-(C_SEL, C_ESTADO, C_DEST, C_PROV, C_TIPO, C_NUM, C_FECHA, C_SUST, C_GRAV, C_CERO, C_IVA, C_TOTAL, C_OBS,
- C_ARCH) = range(14)
+COLUMNAS = ["", "Estado", "Va a", "Proveedor / Cliente", "Tipo", "Número", "Emisión", "Sustento", "Cód. renta",
+            "Base gravada", "Base 0%", "IVA", "Total", "Observaciones", "Archivo"]
+(C_SEL, C_ESTADO, C_DEST, C_PROV, C_TIPO, C_NUM, C_FECHA, C_SUST, C_COD, C_GRAV, C_CERO, C_IVA, C_TOTAL, C_OBS,
+ C_ARCH) = range(15)
 
 
 class DialogoImportarComprobantes(QDialog):
@@ -143,6 +145,8 @@ class DialogoImportarComprobantes(QDialog):
             obs.setToolTip("\n".join(p.notas))
             self.tabla.setItem(fila, C_OBS, obs)
             self.tabla.setItem(fila, C_ARCH, QTableWidgetItem(c.archivo))
+            self.tabla.removeCellWidget(fila, C_COD)
+            self.tabla.setItem(fila, C_COD, QTableWidgetItem(""))
             if p.estado in (OK, AVISO) and p.destino == "compras":
                 combo = QComboBox()
                 for codigo, desc in self.sustentos:
@@ -172,12 +176,13 @@ class DialogoImportarComprobantes(QDialog):
             obs.setToolTip(nl.motivo)
             self.tabla.setItem(fila, C_OBS, obs)
             self.tabla.setItem(fila, C_ARCH, QTableWidgetItem(nl.archivo))
-            for col in (C_DEST, C_PROV, C_TIPO, C_NUM, C_FECHA, C_SUST, C_GRAV, C_CERO, C_IVA, C_TOTAL):
+            for col in (C_DEST, C_PROV, C_TIPO, C_NUM, C_FECHA, C_SUST, C_COD, C_GRAV, C_CERO, C_IVA, C_TOTAL):
                 self.tabla.setItem(fila, col, QTableWidgetItem(""))
         self.tabla.blockSignals(False)
         self.tabla.resizeColumnsToContents()
         for col in (C_PROV, C_OBS):
             self.tabla.setColumnWidth(col, min(self.tabla.columnWidth(col), 340))
+        self.tabla.setColumnWidth(C_COD, max(self.tabla.columnWidth(C_COD), 120))
         self._actualizar_resumen()
 
     def _fila_retencion(self, fila: int, p: PropuestaRetencion, iconos, textos, icono_omitir, icono_registrado) -> None:
@@ -204,9 +209,16 @@ class DialogoImportarComprobantes(QDialog):
         self.tabla.setItem(fila, C_TIPO, QTableWidgetItem("Retención" + (" (PDF)" if ret.origen == "pdf" else "")))
         self.tabla.setItem(fila, C_NUM, QTableWidgetItem(ret.numero))
         self.tabla.setItem(fila, C_FECHA, QTableWidgetItem(f"{ret.fecha_emision:%d/%m/%Y}" if ret.fecha_emision else ""))
-        for col in (C_SUST, C_GRAV, C_CERO):
+        for col in (C_SUST, C_COD, C_GRAV, C_CERO):
             self.tabla.removeCellWidget(fila, col)
             self.tabla.setItem(fila, col, QTableWidgetItem(""))
+        renta = [l for l in ret.lineas if l.impuesto == RENTA]
+        if p.destino == "compras" and renta:
+            sin_codigo = lineas_sin_codigo(ret)
+            if p.estado in (OK, AVISO) and sin_codigo:
+                self.tabla.setCellWidget(fila, C_COD, self._combo_codigo(p, sin_codigo))
+            else:
+                self.tabla.setItem(fila, C_COD, QTableWidgetItem(", ".join(l.codigo for l in renta)))
         for col, valor in ((C_IVA, ret.total_iva), (C_TOTAL, ret.total)):
             item = QTableWidgetItem(f"{valor:,.2f}")
             item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
@@ -217,6 +229,51 @@ class DialogoImportarComprobantes(QDialog):
         obs.setToolTip("\n".join(notas))
         self.tabla.setItem(fila, C_OBS, obs)
         self.tabla.setItem(fila, C_ARCH, QTableWidgetItem(ret.archivo))
+
+    def _combo_codigo(self, p: PropuestaRetencion, lineas) -> QComboBox:
+        """Lista de códigos de la tabla 3.10; primero los que tienen el porcentaje retenido."""
+        combo = QComboBox()
+        combo.setEditable(True)
+        combo.setMinimumContentsLength(6)
+        tabla = self.catalogos.tablas.get("t3_air")
+        porcentaje = lineas[0].porcentaje
+        filas = tabla.filas if tabla else []
+
+        def coincide(f) -> bool:
+            pcts = f.extra[0] if f.extra and f.extra[0] else []
+            try:
+                return any(Decimal(x) == porcentaje for x in pcts)
+            except ArithmeticError:
+                return False
+
+        primero = [f for f in filas if coincide(f)]
+        resto = [f for f in filas if not coincide(f)]
+        combo.addItem("", "")
+        for f in primero + resto:
+            combo.addItem(f"{f.codigo} — {f.descripcion}", f.codigo)
+            combo.setItemData(combo.count() - 1, f.descripcion, Qt.ToolTipRole)
+        if primero and resto:
+            combo.insertSeparator(len(primero) + 1)
+        actual = lineas[0].codigo
+        i = combo.findData(actual) if actual else 0
+        if i < 0:
+            combo.addItem(actual, actual)
+            i = combo.count() - 1
+        combo.setCurrentIndex(i)
+        combo.lineEdit().setCursorPosition(0)
+        combo.setToolTip(f"Código de retención de renta para el {porcentaje.normalize():f} % (Tabla 3.10)")
+
+        def cambiar(_i=None):
+            texto = combo.currentText().strip()
+            j = combo.findText(texto)
+            codigo = combo.itemData(j) if j >= 0 else texto.split(" ", 1)[0]
+            for l in lineas:
+                l.codigo = codigo or ""
+            self._actualizar_resumen()
+
+        combo.currentIndexChanged.connect(cambiar)
+        combo.lineEdit().editingFinished.connect(cambiar)
+        return combo
 
     def _diagnostico(self) -> str:
         """Explica la causa cuando la mayoría de comprobantes no coincide con el anexo."""
@@ -271,6 +328,11 @@ class DialogoImportarComprobantes(QDialog):
             partes.append(f"{registrados} que ya están en el anexo")
         partes.append(f"{omitidos} que no se importarán (vea «Observaciones»)")
         self.resumen.setText(f"<b>{len(self.filas) + len(self.no_leidos)} archivo(s)</b>: " + ", ".join(partes) + ".")
+        sin_cod = sum(1 for p in self.prop_ret if p.seleccionado and p.destino == "compras"
+                      and any(not l.codigo for l in lineas_sin_codigo(p.retencion)))
+        if sin_cod:
+            self.resumen.setText(self.resumen.text() + f"<br><span style='color:#c62828'><b>⚠ {sin_cod} retención(es) "
+                                 "de compras sin código de renta: elíjalo en la columna «Cód. renta».</b></span>")
         aviso = self._diagnostico()
         if aviso:
             self.resumen.setText(self.resumen.text() + f"<br><span style='color:#c62828'><b>⚠ {aviso}</b></span>")

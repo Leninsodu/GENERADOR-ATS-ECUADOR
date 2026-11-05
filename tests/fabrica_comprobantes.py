@@ -156,3 +156,30 @@ Fecha Emisión               12/05/2026
  FACTURA       {num_doc}   10/05/2026      05/2026            100.00           RENTA      312      1.75         1.75
  FACTURA       {num_doc}   10/05/2026      05/2026            15.00            IVA        1        30.00        4.50
 """
+
+
+def texto_ride_retencion_partida(agente, retenido, sec="000000862"):
+    """Formato del facturador del SRI: número de comprobante e impuesto partidos en dos líneas, sin código."""
+    clave = clave_acceso(fecha="27072026", tipo="07", ruc=agente, serie="001001", sec=sec)
+    return f"""
+   R.U.C.:   {agente}
+   COMPROBANTE DE RETENCIÓN
+   No.   001-001-{sec}
+   NÚMERO DE AUTORIZACIÓN
+   {clave}
+   FECHA Y HORA DE   27/07/2026 14:45:28
+   AGENTE DE PRUEBA   AUTORIZACIÓN
+   AGENTE DE PRUEBA   AMBIENTE:   PRODUCCIÓN
+   Agente de Retención Resolución No.   1
+Razón Social / Nombres y Apellidos:   PROVEEDOR DE PRUEBA
+Identificación   {retenido}
+Fecha   27/07/2026
+  Comprobante   Número   Fecha Emisión   Ejercicio   Base Imponible para   Impuesto   Porcentaje   valorRetenido
+   Fiscal   la Retención   Retención
+   79.37   IVA   70.00   55.56
+FACTURA   0010010000000   27/07/2026   07/2026
+   19   Impuesto a la
+   529.10   Renta   10.00   52.91
+   Información Adicional
+   Dirección:   CALLE 1
+"""

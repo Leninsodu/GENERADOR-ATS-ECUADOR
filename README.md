@@ -40,7 +40,11 @@ falta tenerlo instalado. Trae incluido el esquema oficial `at.xsd` del ATS.
     retenido en el casillero de su porcentaje (10, 20, 30, 50, 70 o 100 %), la renta en el
     detalle AIR (código, base, porcentaje y valor) y la serie, secuencial, autorización y
     fecha del comprobante de retención. Si la factura se importa en el mismo lote, la
-    retención se aplica después de crearla. Se admiten facturas, notas de crédito, notas de débito y liquidaciones de
+    retención se aplica después de crearla.
+  - si el PDF de la retención no trae el código de renta (el RIDE del facturador del SRI
+    no lo muestra), se elige en la columna «Cód. renta» de la vista previa, con los códigos
+    de la Tabla 3.10 que corresponden al porcentaje retenido; el programa recuerda el código
+    usado con cada proveedor y lo propone la próxima vez. Se admiten facturas, notas de crédito, notas de débito y liquidaciones de
   compra. Antes de agregarlos se muestra una vista previa que descarta los comprobantes de
   otro comprador, de otro período, de pruebas, no autorizados o ya registrados. El sustento
   tributario se toma de compras anteriores del mismo proveedor (o el que usted elija) y las
@@ -123,8 +127,9 @@ Se necesita Python 3.10 o superior en la máquina donde se construye (no en la q
 Además se genera `dist/EditorATS-<versión>-<sistema>.zip`, listo para compartir.
 
 **Con GitHub**, sin tener Windows ni Mac: suba el proyecto a un repositorio y en la pestaña
-*Actions* ejecute «Construir ejecutables». GitHub construye los de Windows, Mac (Apple e
-Intel) y Linux y los deja para descargar como *Artifacts*.
+*Actions* ejecute «Construir ejecutables». GitHub construye los de Windows, Mac con
+procesador Apple y Linux y los deja para descargar como *Artifacts*. (Para Mac con
+procesador Intel, ejecute `construir-mac.command` en esa Mac.)
 
 Al abrirlos por primera vez:
 - **Windows** puede mostrar «Windows protegió su PC»: *Más información → Ejecutar de todas formas*.

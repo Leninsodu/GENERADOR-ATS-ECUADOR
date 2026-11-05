@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, 
                                QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QSpinBox, QVBoxLayout)
 
 from .. import importador
-from ..identificacion import ruc_valido
+from ..identificacion import ruc_aceptado
 
 def limpiar_texto(texto: str) -> str:
     """El esquema solo admite letras sin tilde, números y espacios: 'Peña & Cía.' -> 'PENA CIA'."""
@@ -86,7 +86,7 @@ class DialogoNuevo(QDialog):
         if len(razon) < 5:
             self.aviso.setText("La razón social debe tener al menos 5 caracteres.")
             return
-        if not ruc_valido(ruc):
+        if not ruc_aceptado(ruc):
             r = QMessageBox.question(self, "RUC", "El RUC no cumple el dígito verificador. ¿Continuar de todos modos?")
             if r != QMessageBox.Yes:
                 return

@@ -5,7 +5,7 @@ from fabrica_comprobantes import (CLIENTE, INFORMANTE, PROVEEDOR, factura, reten
 from test_nucleo import _doc_minimo
 
 from atsapp import comprobantes, retenciones
-from atsapp.comprobantes import OK, OMITIR, comprobante_desde_texto_ride, leer_bytes
+from atsapp.comprobantes import AVISO, OK, OMITIR, comprobante_desde_texto_ride, leer_bytes
 from atsapp.validacion import validar_documento, validar_xsd
 
 
@@ -97,3 +97,37 @@ def test_retencion_desde_pdf(esquema):
     doc = _con_compra(esquema)
     res = retenciones.aplicar(doc, retenciones.analizar(doc, [ret]))
     assert res.compras and res.compras[0].texto("valorRetBienes") == "4.50"
+
+
+def test_pdf_con_numero_e_impuesto_partidos(esquema, tmp_path, monkeypatch):
+    from fabrica_comprobantes import texto_ride_retencion_partida
+
+    monkeypatch.setenv("ATSAPP_DATOS", str(tmp_path))
+    ret = comprobante_desde_texto_ride(texto_ride_retencion_partida(INFORMANTE, PROVEEDOR))
+    assert [(l.impuesto, l.codigo, str(l.base), str(l.porcentaje), str(l.valor), l.num_doc_sustento) for l in ret.lineas] == [
+        ("2", "2", "79.37", "70.00", "55.56", "001001000000019"), ("1", "", "529.10", "10.00", "52.91", "001001000000019")]
+    assert ret.periodo_fiscal == "07/2026"
+    # anexo de julio con la factura 001-001-000000019 del proveedor
+    doc = _doc_minimo(esquema)
+    doc.raiz.poner("Mes", "07")
+    fac = leer_bytes(factura(sec="000000019", fecha="27/07/2026", impuestos=(("2", "4", "529.10", "79.37"),),
+                             total="608.47").encode())
+    fac.estab, fac.pto_emi = "001", "001"
+    props = comprobantes.analizar(doc, [fac])
+    comprobantes.importar(doc, props)
+    pr = retenciones.analizar(doc, [ret])
+    assert pr[0].estado == AVISO and "elíjalo" in pr[0].notas[-1]
+    retenciones.lineas_sin_codigo(ret)[0].codigo = "303"  # lo que el usuario elige en la vista previa
+    res = retenciones.aplicar(doc, pr)
+    c = res.compras[0]
+    assert c.texto("valorRetServicios") == "55.56"
+    assert [(a.texto("codRetAir"), a.texto("valRetAir")) for a in c.hijo("air").lista("detalleAir")] == [("303", "52.91")]
+    retenciones.recordar_codigos(ret)
+    # la próxima retención del mismo proveedor sugiere el 303
+    otra = comprobante_desde_texto_ride(texto_ride_retencion_partida(INFORMANTE, PROVEEDOR, sec="000000900"))
+    doc2 = _doc_minimo(esquema)
+    doc2.raiz.poner("Mes", "07")
+    comprobantes.importar(doc2, comprobantes.analizar(doc2, [fac]))
+    pr2 = retenciones.analizar(doc2, [otra])
+    assert retenciones.lineas_sin_codigo(otra)[0].codigo == "303"
+    assert "tomado de compras anteriores" in pr2[0].notas[-1]

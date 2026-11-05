@@ -51,6 +51,22 @@ def ruc_valido(ruc: str) -> bool:
     return False
 
 
+def ruc_aceptado(ruc: str) -> bool:
+    """Valida el RUC igual que DIMM.
+
+    Exige 13 dígitos terminados en 001. Para personas naturales (tercer dígito 0 a 5) la
+    cédula debe cumplir el módulo 10. Para entidades públicas (6) y sociedades (9) DIMM
+    calcula el dígito verificador pero no lo exige, porque el SRI emite RUC nuevos que no
+    cumplen la fórmula clásica.
+    """
+    if len(ruc) != 13 or not ruc.isdigit() or ruc[10:] != "001":
+        return False
+    tercero = int(ruc[2])
+    if tercero <= 5:
+        return cedula_valida(ruc[:10])
+    return tercero in (6, 9)
+
+
 CONSUMIDOR_FINAL = "9999999999999"
 
 
